@@ -1,0 +1,17 @@
+\begin{tabular}{lcccc}
+\toprule
+Optimizer & best lr & test acc & opt.\ step [ms] & train step [ms] \\
+\midrule
+muon & 0.05 & 93.36 $\pm$ 0.00 & 15.30 & 57.40 \\
+shampoo & 0.01 & 92.28 $\pm$ 0.00 & 18.48 & 62.44 \\
+adam & 0.003 & 90.67 $\pm$ 0.00 & 2.98 & 46.48 \\
+adamw & 0.01 & 90.49 $\pm$ 0.00 & 2.86 & 46.01 \\
+rmsprop & 0.001 & 90.39 $\pm$ 0.00 & 2.25 & 45.62 \\
+nag & 0.1 & 90.16 $\pm$ 0.00 & 1.96 & 45.40 \\
+signum & 0.003 & 90.10 $\pm$ 0.00 & 2.00 & 44.89 \\
+momentum & 0.3 & 89.45 $\pm$ 0.00 & 1.53 & 44.52 \\
+adagrad & 0.01 & 89.20 $\pm$ 0.00 & 2.26 & 45.53 \\
+lion & 0.0003 & 89.18 $\pm$ 0.00 & 2.71 & 45.71 \\
+sgd & 0.3 & 88.28 $\pm$ 0.00 & 0.81 & 44.37 \\
+\bottomrule
+\end{tabular}

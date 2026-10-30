@@ -1,0 +1,17 @@
+\begin{tabular}{lcccc}
+\toprule
+Optimizer & best lr & val loss & opt.\ step [ms] & train step [ms] \\
+\midrule
+muon & 0.02 & 1.02 $\pm$ 0.00 & 28.08 & 97.04 \\
+shampoo & 0.003 & 1.03 $\pm$ 0.00 & 45.32 & 116.15 \\
+adamw & 0.001 & 1.08 $\pm$ 0.00 & 2.84 & 74.11 \\
+adam & 0.001 & 1.08 $\pm$ 0.00 & 2.56 & 73.88 \\
+signum & 0.0003 & 1.08 $\pm$ 0.00 & 2.04 & 73.21 \\
+rmsprop & 0.001 & 1.14 $\pm$ 0.01 & 1.86 & 73.29 \\
+nag_clip & 0.3 & 1.15 $\pm$ 0.00 & 1.56 & 73.35 \\
+momentum_clip & 0.3 & 1.16 $\pm$ 0.00 & 1.15 & 72.94 \\
+lion & 0.0003 & 1.20 $\pm$ 0.00 & 2.67 & 73.77 \\
+adagrad & 0.01 & 1.21 $\pm$ 0.01 & 1.86 & 73.16 \\
+sgd_clip & 1 & 1.41 $\pm$ 0.00 & 0.44 & 72.24 \\
+\bottomrule
+\end{tabular}

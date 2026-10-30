@@ -1,0 +1,17 @@
+# Stage 2: best lr from configs/cifar_lr_sweep.yaml, 3 seeds, 20 epochs.
+script: experiments.train_cifar
+out_dir: results/cifar_final
+seeds: [0, 1, 2]
+common: {model: resnet18, epochs: 20, batch_size: 256, schedule: cosine, warmup_epochs: 1}
+optimizers:
+  sgd:      {lr: 0.3,    wd: 5.0e-4}
+  momentum: {lr: 0.3,    wd: 5.0e-4}
+  nag:      {lr: 0.1,    wd: 5.0e-4}
+  adagrad:  {lr: 0.01,   wd: 5.0e-4}
+  rmsprop:  {lr: 1.0e-3, wd: 5.0e-4}
+  adam:     {lr: 3.0e-3, wd: 5.0e-4}
+  adamw:    {lr: 1.0e-2, wd: 0.05}
+  signum:   {lr: 3.0e-3, wd: 0.5}
+  lion:     {lr: 3.0e-4, wd: 0.5}
+  shampoo:  {lr: 1.0e-2, wd: 0.05}
+  muon:     {lr: 0.05,   wd: 0.05, aux_lr: 1.0e-3}

@@ -1,0 +1,18 @@
+# Smoke test: every optimizer for 60 steps of a tiny GPT on random characters.
+script: experiments.train_gpt
+out_dir: results/smoke_gpt
+seeds: [0]
+common: {steps: 60, eval_every: 30, eval_iters: 5, n_layer: 2, n_head: 2, n_embd: 64, block_size: 64, batch_size: 16, warmup_steps: 10, synthetic: true}
+optimizers:
+  sgd: {lr: 0.3}
+  momentum: {lr: 0.1}
+  nag: {lr: 0.1}
+  adagrad: {lr: 0.01}
+  rmsprop: {lr: 1.0e-3}
+  adam: {lr: 1.0e-3}
+  adamw: {lr: 1.0e-3}
+  signsgd: {lr: 1.0e-4}
+  signum: {lr: 3.0e-4}
+  lion: {lr: 1.0e-4}
+  shampoo: {lr: 1.0e-3}
+  muon: {lr: 0.02, aux_lr: 3.0e-3}

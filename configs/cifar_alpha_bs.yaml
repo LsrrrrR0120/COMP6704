@@ -1,0 +1,110 @@
+# Spectral power alpha x batch size on CIFAR-10 / ResNet-18 (fixed budget of 10 epochs).
+# Theory (experiments/spectral_noise_theory.py) predicts that the best alpha decreases as the
+# batch size (gradient SNR) grows.
+script: experiments.train_cifar
+out_dir: results/cifar_alpha_bs
+seeds: [0]
+common: {model: resnet18, epochs: 10, schedule: cosine, warmup_epochs: 1, wd: 0.05, aux_lr: 0.001}
+optimizers:
+  muon_bs64:
+    optimizer: muon
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  a0_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  a0.25_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.25}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  a0.5_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.5}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  a1_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 1.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  adaptive_s1_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 1.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  adaptive_s10_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 10.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 64
+  muon_bs256:
+    optimizer: muon
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  a0_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  a0.25_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.25}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  a0.5_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.5}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  a1_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 1.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  adaptive_s1_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 1.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  adaptive_s10_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 10.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 256
+  muon_bs1024:
+    optimizer: muon
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024
+  a0_bs1024:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024
+  a0.25_bs1024:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.25}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024
+  a0.5_bs1024:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.5}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024
+  a1_bs1024:
+    optimizer: spectral
+    opt_kwargs: {alpha: 1.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024
+  adaptive_s1_bs1024:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 1.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024
+  adaptive_s10_bs1024:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 10.0}
+    lr: [0.02, 0.05, 0.1]
+    batch_size: 1024

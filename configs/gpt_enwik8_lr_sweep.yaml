@@ -1,0 +1,24 @@
+# Stage 1: learning-rate sweep for a 6-layer byte-level GPT on enwik8 (1 seed, 3000 steps).
+# 3000 steps x 64 x 256 = 49M tokens < 90M training bytes, i.e. less than one epoch, so
+# the comparison measures optimization speed rather than overfitting (unlike Tiny Shakespeare).
+script: experiments.train_gpt
+out_dir: results/gpt_enwik8_lr_sweep
+seeds: [0]
+common: {dataset: enwik8, steps: 3000, batch_size: 64, block_size: 256, n_layer: 6, n_head: 6, n_embd: 384, warmup_steps: 100, eval_every: 250, eval_iters: 50}
+optimizers:
+  sgd:      {lr: [0.03, 0.1, 0.3, 1.0],        wd: 0.0}
+  momentum: {lr: [0.01, 0.03, 0.1, 0.3],       wd: 0.0}
+  nag:      {lr: [0.01, 0.03, 0.1, 0.3],       wd: 0.0}
+  adagrad:  {lr: [0.001, 0.003, 0.01, 0.03],   wd: 0.0}
+  rmsprop:  {lr: [3.0e-5, 1.0e-4, 3.0e-4, 1.0e-3, 3.0e-3], wd: 0.0}
+  adam:     {lr: [3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2], wd: 0.0}
+  adamw:    {lr: [3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2], wd: 0.1}
+  signum:   {lr: [3.0e-5, 1.0e-4, 3.0e-4, 1.0e-3], wd: 1.0}
+  lion:     {lr: [3.0e-5, 1.0e-4, 3.0e-4, 1.0e-3], wd: 1.0}
+  shampoo:  {lr: [3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2], wd: 0.1}
+  muon:     {lr: [0.01, 0.02, 0.05, 0.1],      wd: 0.1, aux_lr: 3.0e-3}
+  # SGD-family with global gradient-norm clipping at 1.0: without it they stall on the
+  # unigram plateau or blow up (heavy-tailed gradient noise in attention models).
+  sgd_clip:      {optimizer: sgd,      lr: [0.1, 0.3, 1.0, 3.0], wd: 0.0, grad_clip: 1.0}
+  momentum_clip: {optimizer: momentum, lr: [0.03, 0.1, 0.3, 1.0], wd: 0.0, grad_clip: 1.0}
+  nag_clip:      {optimizer: nag,      lr: [0.03, 0.1, 0.3, 1.0], wd: 0.0, grad_clip: 1.0}

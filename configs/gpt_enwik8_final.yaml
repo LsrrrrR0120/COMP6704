@@ -1,0 +1,19 @@
+# Stage 2: best lr from configs/gpt_enwik8_lr_sweep.yaml, 3 seeds, 5000 steps
+# (5000 x 64 x 256 = 82M tokens < 90M training bytes: still less than one epoch).
+# Unclipped SGD/Momentum/NAG are omitted: they stall or diverge in the sweep.
+script: experiments.train_gpt
+out_dir: results/gpt_enwik8_final
+seeds: [0, 1, 2]
+common: {dataset: enwik8, steps: 5000, batch_size: 64, block_size: 256, n_layer: 6, n_head: 6, n_embd: 384, warmup_steps: 100, eval_every: 250, eval_iters: 50}
+optimizers:
+  sgd_clip:      {optimizer: sgd,      lr: 1.0,    wd: 0.0, grad_clip: 1.0}
+  momentum_clip: {optimizer: momentum, lr: 0.3,    wd: 0.0, grad_clip: 1.0}
+  nag_clip:      {optimizer: nag,      lr: 0.3,    wd: 0.0, grad_clip: 1.0}
+  adagrad:  {lr: 0.01,   wd: 0.0}
+  rmsprop:  {lr: 1.0e-3, wd: 0.0}
+  adam:     {lr: 1.0e-3, wd: 0.0}
+  adamw:    {lr: 1.0e-3, wd: 0.1}
+  signum:   {lr: 3.0e-4, wd: 1.0}
+  lion:     {lr: 3.0e-4, wd: 1.0}
+  shampoo:  {lr: 3.0e-3, wd: 0.1}
+  muon:     {lr: 0.02,   wd: 0.1, aux_lr: 3.0e-3}

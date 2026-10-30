@@ -1,0 +1,180 @@
+# Spectral power alpha x batch size on enwik8 (fixed budget of 24.6M tokens per run).
+# Theory (experiments/spectral_noise_theory.py) predicts that the best alpha decreases as the
+# batch size (gradient SNR) grows. bs=256 uses 4 x 64 gradient accumulation.
+script: experiments.train_gpt
+out_dir: results/enwik8_alpha_bs
+seeds: [0]
+common: {dataset: enwik8, block_size: 256, n_layer: 6, n_head: 6, n_embd: 384, eval_iters: 50, wd: 0.1, aux_lr: 0.003}
+optimizers:
+  muon_bs16:
+    optimizer: muon
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  a0_bs16:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  a0.25_bs16:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.25}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  a0.5_bs16:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.5}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  a1_bs16:
+    optimizer: spectral
+    opt_kwargs: {alpha: 1.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  adaptive_s1_bs16:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 1.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  adaptive_s10_bs16:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 10.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  muon_bs64:
+    optimizer: muon
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  a0_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  a0.25_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.25}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  a0.5_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.5}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  a1_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: 1.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  adaptive_s1_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 1.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  adaptive_s10_bs64:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 10.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  muon_bs256:
+    optimizer: muon
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  a0_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  a0.25_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.25}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  a0.5_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 0.5}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  a1_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: 1.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  adaptive_s1_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 1.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  adaptive_s10_bs256:
+    optimizer: spectral
+    opt_kwargs: {alpha: adaptive, snr0: 10.0}
+    lr: [0.01, 0.02, 0.04]
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4

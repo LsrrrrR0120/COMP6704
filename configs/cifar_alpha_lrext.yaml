@@ -1,0 +1,51 @@
+# Extends the lr grid of the alpha sweeps where alpha in {0, -0.25} or Muon peaked on a grid boundary.
+script: experiments.train_cifar
+out_dir: results/cifar_alpha_bs
+seeds:
+- 0
+common:
+  model: resnet18
+  epochs: 10
+  schedule: cosine
+  warmup_epochs: 1
+  wd: 0.05
+  aux_lr: 0.001
+optimizers:
+  a0_bs64:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: 0.0
+    lr:
+    - 0.01
+    - 0.02
+    batch_size: 64
+  a-0.25_bs64:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: -0.25
+    lr:
+    - 0.01
+    - 0.02
+    batch_size: 64
+  muon_bs64:
+    optimizer: muon
+    lr:
+    - 0.01
+    - 0.02
+    batch_size: 64
+  a0_bs256:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: 0.0
+    lr:
+    - 0.1
+    - 0.2
+    batch_size: 256
+  a-0.25_bs256:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: -0.25
+    lr:
+    - 0.01
+    - 0.02
+    batch_size: 256

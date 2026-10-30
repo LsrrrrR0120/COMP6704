@@ -1,0 +1,18 @@
+# Stage 1: learning-rate sweep (grids extended where the best lr hit the boundary) on CIFAR-10 / ResNet-18 (1 seed, 10 epochs).
+# Weight decay is L2 (coupled) for SGD-family/Adagrad/RMSprop/Adam and decoupled for the rest.
+script: experiments.train_cifar
+out_dir: results/cifar_lr_sweep
+seeds: [0]
+common: {model: resnet18, epochs: 10, batch_size: 256, schedule: cosine, warmup_epochs: 1}
+optimizers:
+  sgd:      {lr: [0.03, 0.1, 0.3, 1.0],        wd: 5.0e-4}
+  momentum: {lr: [0.01, 0.03, 0.1, 0.3, 1.0],       wd: 5.0e-4}
+  nag:      {lr: [0.01, 0.03, 0.1, 0.3],       wd: 5.0e-4}
+  adagrad:  {lr: [0.003, 0.01, 0.03, 0.1],     wd: 5.0e-4}
+  rmsprop:  {lr: [1.0e-4, 3.0e-4, 1.0e-3, 3.0e-3], wd: 5.0e-4}
+  adam:     {lr: [1.0e-4, 3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2], wd: 5.0e-4}
+  adamw:    {lr: [3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2, 3.0e-2], wd: 0.05}
+  signum:   {lr: [1.0e-4, 3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2], wd: 0.5}
+  lion:     {lr: [3.0e-5, 1.0e-4, 3.0e-4, 1.0e-3], wd: 0.5}
+  shampoo:  {lr: [3.0e-4, 1.0e-3, 3.0e-3, 1.0e-2, 3.0e-2], wd: 0.05}
+  muon:     {lr: [0.005, 0.01, 0.02, 0.05, 0.1, 0.2],    wd: 0.05, aux_lr: 1.0e-3}

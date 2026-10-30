@@ -1,0 +1,67 @@
+# Negative spectral powers (alpha < 0 amplifies small singular directions beyond the polar
+# factor), to check whether the best alpha of configs/enwik8_alpha_bs.yaml lies at alpha = 0
+# or below it. Same out_dir, so plots.plot_alpha_bs shows both sweeps together.
+script: experiments.train_gpt
+out_dir: results/enwik8_alpha_bs
+seeds:
+- 0
+common:
+  dataset: enwik8
+  block_size: 256
+  n_layer: 6
+  n_head: 6
+  n_embd: 384
+  eval_iters: 50
+  wd: 0.1
+  aux_lr: 0.003
+optimizers:
+  a-0.25_bs16:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: -0.25
+    lr:
+    - 0.01
+    - 0.02
+    - 0.04
+    batch_size: 16
+    steps: 6000
+    warmup_steps: 300
+    eval_every: 600
+  a-0.25_bs64:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: -0.25
+    lr:
+    - 0.01
+    - 0.02
+    - 0.04
+    batch_size: 64
+    steps: 1500
+    warmup_steps: 75
+    eval_every: 150
+  a-0.25_bs256:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: -0.25
+    lr:
+    - 0.01
+    - 0.02
+    - 0.04
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4
+  a-0.5_bs256:
+    optimizer: spectral
+    opt_kwargs:
+      alpha: -0.5
+    lr:
+    - 0.01
+    - 0.02
+    - 0.04
+    batch_size: 256
+    steps: 375
+    warmup_steps: 19
+    eval_every: 38
+    grad_accum: 4

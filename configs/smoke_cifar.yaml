@@ -1,0 +1,18 @@
+# Smoke test: every optimizer for 1 epoch on random CIFAR-shaped data (no download needed).
+script: experiments.train_cifar
+out_dir: results/smoke_cifar
+seeds: [0]
+common: {model: resnet_small, epochs: 2, batch_size: 256, synthetic: true, warmup_epochs: 0.5}
+optimizers:
+  sgd: {lr: 0.1}
+  momentum: {lr: 0.05}
+  nag: {lr: 0.05}
+  adagrad: {lr: 0.01}
+  rmsprop: {lr: 1.0e-3}
+  adam: {lr: 1.0e-3}
+  adamw: {lr: 1.0e-3, wd: 0.05}
+  signsgd: {lr: 1.0e-4}
+  signum: {lr: 3.0e-4}
+  lion: {lr: 1.0e-4}
+  shampoo: {lr: 1.0e-3}
+  muon: {lr: 0.02, aux_lr: 1.0e-3}
