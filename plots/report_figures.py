@@ -42,7 +42,9 @@ def setup():
         "axes.edgecolor": MUTED, "xtick.color": MUTED, "ytick.color": MUTED, "axes.labelcolor": INK,
         "axes.grid": True, "grid.color": "#e4e3df", "grid.linewidth": 0.4,
         "axes.spines.top": False, "axes.spines.right": False, "pdf.fonttype": 42,
-        "legend.frameon": False, "figure.dpi": 150,
+        # Opaque, borderless legend boxes so grid and data lines never run through the text.
+        "legend.frameon": True, "legend.framealpha": 1.0, "legend.edgecolor": "white",
+        "legend.fancybox": False, "legend.borderpad": 0.3, "figure.dpi": 150,
     })
 
 
@@ -83,7 +85,7 @@ def labels_for(by):
 def fig_main(out):
     """Best-lr curves, 3 seeds: CIFAR test accuracy vs epoch, enwik8 val loss vs step and time."""
     cif, gpt = by_label_lr("results/cifar_final"), by_label_lr("results/gpt_enwik8_final")
-    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.85))
+    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.7))
     for l in labels_for(cif):
         rs = cif[l][best_lr(cif, l, "test_acc", True)]
         x, m, s = mean_curve(rs, "eval", "test_acc", x_field="epoch")
@@ -97,7 +99,7 @@ def fig_main(out):
         ax[1].fill_between(x, m - s, m + s, color=style(l)["color"], alpha=0.15, lw=0)
         xt, mt, _ = mean_curve(rs, "eval", "val_loss", x_field="wall_time")
         ax[2].plot(xt, mt, **style(l))
-    ax[1].set(xlabel="step", ylabel="validation loss (nats/byte)", ylim=(1.0, 1.6), title="(b) enwik8 / GPT")
+    ax[1].set(xlabel="step", ylabel="val. loss (nats/byte)", ylim=(1.0, 1.6), title="(b) enwik8 / GPT")
     ax[2].set(xlabel="wall-clock time (s)", ylim=(1.0, 1.6), title="(c) enwik8, vs. time")
     handles, names = ax[1].get_legend_handles_labels()
     fig.legend(handles, names, loc="lower center", ncol=11, bbox_to_anchor=(0.5, -0.02), handlelength=2.2,
@@ -147,15 +149,15 @@ def alpha_table(root):
 
 def fig_alpha(out):
     """(a) model prediction of the best alpha vs SNR; (b, c) measured best-lr result vs alpha per batch size."""
-    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.85))
+    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.7))
     with open("figures/theory/optimal_alpha_vs_noise.json") as f:
         th = json.load(f)["1.0"]
     blues = ["#9ec5f0", "#5a9be3", "#2a78d6", "#174a8a"]
     for c, (k, ys) in zip(blues, th["best_alpha_mixed"].items()):
         ax[0].plot(th["snr"], ys, marker="o", ms=2, color=c, label=rf"$\kappa$={k}")
     ax[0].set(xscale="log", xlabel=r"SNR $\|G\|_F^2/\mathbb{E}\|N\|_F^2$", ylabel=r"best $\alpha$",
-              title="(a) i.i.d.-noise model")
-    ax[0].legend(loc="lower left")
+              title="(a) i.i.d.-noise model", ylim=(-0.22, 1.06), yticks=[0.2, 0.4, 0.6, 0.8, 1.0])
+    ax[0].legend(loc="lower left", ncol=2, columnspacing=0.8, handlelength=1.6)
     for a, root, title in [(ax[1], "results/cifar_alpha_bs", "(b) CIFAR-10, 10 epochs"),
                            (ax[2], "results/enwik8_alpha_bs", "(c) enwik8, 24.6M tokens")]:
         metric, t = alpha_table(root)
@@ -184,7 +186,7 @@ def fig_alpha(out):
 def fig_noise(out):
     """Fixed-point gradient-noise diagnostic: structure and one-step test, both tasks."""
     res = {t: json.load(open(f"figures/noise/noise_{t}.json")) for t in ("cifar", "gpt")}
-    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.85))
+    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.7))
     keys = ["left", "right", "both", "stable_rank_ratio"]
     names = ["left", "right", "both", "stable\nrank"]
     for k, (t, c, name) in enumerate([("cifar", FAMILY["euclid"], "ResNet-18"), ("gpt", FAMILY["matrix"], "GPT")]):
@@ -214,10 +216,62 @@ def fig_noise(out):
         a.plot(r["alphas"], np.array(one["full"]) / full, "-", color=INK, lw=1.2, label="mean grad.")
         a.plot([], [], "o-", color=MUTED, ms=2.5, label="real noise")
         a.plot([], [], "x--", color=MUTED, ms=3, lw=0.7, label="isotropic")
-        a.set(xlabel=r"spectral power $\alpha$", ylabel="best 1-step decrease (norm.)", title=title, ylim=(0, 1.42), yticks=[0, 0.25, 0.5, 0.75, 1.0])
-        a.legend(loc="upper center", fontsize=5, ncol=3, columnspacing=0.6, handlelength=1.6)
+        a.set(xlabel=r"spectral power $\alpha$", ylabel="1-step decrease (norm.)", title=title, ylim=(0, 1.68),
+              yticks=[0, 0.25, 0.5, 0.75, 1.0])
+        a.legend(loc="upper right", fontsize=5, ncol=2, columnspacing=0.8, handlelength=1.8)
     fig.tight_layout(w_pad=0.6)
     save(fig, out, "fig_noise")
+
+
+def seed_runs(root, method, bs):
+    """The three seed runs of `method` at batch `bs`, at the lr with the best seed-mean."""
+    from plots.plot_alpha_seeds import summarize
+    _, res = summarize(root)
+    lr = res[method][bs][2]
+    return [json.load(open(f)) for f in glob.glob(os.path.join(root, f"{method}_bs{bs}", f"lr{lr:g}_seed*.json"))]
+
+
+def fig_snr(out):
+    """Half-batch SNR estimator: (a) check against the fixed point, (b) alpha during training,
+    (c) enwik8 val-loss gap to fixed alpha = 0 during training."""
+    fig, ax = plt.subplots(1, 3, figsize=(5.5, 1.7))
+    for t, c, name in [("cifar", FAMILY["euclid"], "ResNet-18"), ("gpt", FAMILY["matrix"], "GPT")]:
+        r = json.load(open(f"figures/snr_check/snr_check_{t}.json"))
+        ax[0].scatter(r["truth"], r["half_batch"], s=5, color=c, lw=0)
+        ax[0].scatter(r["truth"], r["two_moment"], s=7, color=c, marker="x", lw=0.6)
+        ax[0].plot([], [], "s", ms=3, color=c, label=name)
+    ax[0].plot([], [], "o", ms=2, color=MUTED, label="half-batch")
+    ax[0].plot([], [], "x", ms=3, color=MUTED, label="two-moment")
+    ax[0].plot([-1.4, 0.4], [-1.4, 0.4], color=MUTED, lw=0.6, ls=":")
+    ax[0].set(xlabel=r"fixed-point $\log_{10}\mathrm{SNR}_b$", ylabel="online estimate", xlim=(-1.45, 1.75),
+              title="(a) SNR estimate per matrix")
+    ax[0].legend(loc="center right", bbox_to_anchor=(1.0, 0.42), handletextpad=0.3)
+
+    blues = ["#9ec5f0", "#2a78d6", "#174a8a"]
+    for root, bss, ls, name in [("results/enwik8_alpha_bs", [16, 64, 256], "-", "enwik8"),
+                                ("results/cifar_alpha_bs", [64, 256, 1024], "--", "CIFAR")]:
+        for c, bs in zip(blues, bss):
+            ev = [e for e in seed_runs(root, "snr", bs)[0]["eval"] if "alpha_mean" in e]
+            x = np.array([e["step"] for e in ev]) / ev[-1]["step"]
+            ax[1].plot(x, [e["alpha_mean"] for e in ev], ls=ls, color=c, marker="o", ms=1.8)
+        ax[1].plot([], [], ls=ls, color=MUTED, label=name)
+    ax[1].set(xlabel="fraction of training", ylabel=r"layer-mean $\alpha$", ylim=(-0.53, 0.14),
+              title=r"(b) adaptive $\alpha$ during training")
+    ax[1].legend(loc="upper center", ncol=2, handlelength=2.2)
+
+    for c, bs in zip(blues, [16, 64, 256]):
+        curves = []
+        for m in ("snr", "a0"):
+            rs = seed_runs("results/enwik8_alpha_bs", m, bs)
+            curves.append(np.mean([[e["val_loss"] for e in r["eval"]] for r in rs], axis=0))
+        steps = np.array([e["step"] for e in rs[0]["eval"]])
+        ax[2].plot(steps[1:] / steps[-1], (curves[0] - curves[1])[1:], color=c, marker="o", ms=1.8, label=f"batch {bs}")
+    ax[2].axhline(0, color=MUTED, lw=0.6, ls=":")
+    ax[2].set(xlabel="fraction of training", ylabel="val.-loss gap (nats)",
+              title=r"(c) enwik8: adaptive $-$ fixed $\alpha=0$")
+    ax[2].legend(loc="lower right")
+    fig.tight_layout(w_pad=0.6)
+    save(fig, out, "fig_snr")
 
 
 def save(fig, out, name):
@@ -233,7 +287,7 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
     setup()
-    for f in (fig_main, fig_lr, fig_alpha, fig_noise):
+    for f in (fig_main, fig_lr, fig_alpha, fig_noise, fig_snr):
         f(args.out)
 
 

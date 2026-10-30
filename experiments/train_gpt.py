@@ -79,6 +79,10 @@ def main(argv=None):
                   device=torch.cuda.get_device_name(0) if device.type == "cuda" else "cpu")
     logger = RunLogger(args.out, config)
     print(f"[{args.optimizer} lr={args.lr}] {config['n_params'] / 1e6:.2f}M params, {args.steps} steps")
+    # The half-batch SNR estimator (SpectralMuon alpha="snr") needs the gradient of the first
+    # half of the micro-batches; an odd number of micro-batches is split once more.
+    half_batch = getattr(opt, "needs_half_batch", False)
+    accum = args.grad_accum * (2 if half_batch and args.grad_accum % 2 else 1)
 
     status = "finished"
     opt_timer, step_timer = CudaStepTimer(), CudaStepTimer()
@@ -99,12 +103,14 @@ def main(argv=None):
         step_timer.start()
         opt.zero_grad(set_to_none=True)
         loss = 0.0
-        for _ in range(args.grad_accum):
-            x, y = ds.get_batch("train", args.batch_size // args.grad_accum, args.block_size)
+        for i in range(accum):
+            x, y = ds.get_batch("train", args.batch_size // accum, args.block_size)
             with torch.autocast("cuda", dtype=torch.bfloat16, enabled=use_bf16):
-                micro_loss = model(x, y) / args.grad_accum
+                micro_loss = model(x, y) / accum
             micro_loss.backward()
             loss = loss + micro_loss.detach()
+            if half_batch and i == accum // 2 - 1:
+                opt.mark_half()
         if args.grad_clip > 0:
             torch.nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
         log_now = step % args.log_every == 0

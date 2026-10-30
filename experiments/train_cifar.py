@@ -74,6 +74,7 @@ def main(argv=None):
     logger = RunLogger(args.out, config)
     print(f"[{args.optimizer} lr={args.lr}] {config['n_params'] / 1e6:.2f}M params, {total_steps} steps")
 
+    half_batch = getattr(opt, "needs_half_batch", False)
     step, status, run_loss = 0, "finished", None
     opt_timer, step_timer = CudaStepTimer(), CudaStepTimer()
     if device.type == "cuda":
@@ -84,9 +85,19 @@ def main(argv=None):
             step_timer.start()
             with torch.autocast("cuda", dtype=torch.bfloat16, enabled=use_bf16):
                 logits = model(xb.contiguous(memory_format=torch.channels_last))
-            loss = F.cross_entropy(logits.float(), yb, label_smoothing=args.label_smoothing)
             opt.zero_grad(set_to_none=True)
-            loss.backward()
+            if half_batch:
+                # Two backward passes through the same full-batch forward (BatchNorm statistics
+                # unchanged): first half, mark_half() for the SNR estimator, second half.
+                per = F.cross_entropy(logits.float(), yb, label_smoothing=args.label_smoothing, reduction="none")
+                h = per.size(0) // 2
+                (per[:h].sum() / per.size(0)).backward(retain_graph=True)
+                opt.mark_half()
+                (per[h:].sum() / per.size(0)).backward()
+                loss = per.detach().mean()
+            else:
+                loss = F.cross_entropy(logits.float(), yb, label_smoothing=args.label_smoothing)
+                loss.backward()
             log_now = step % args.log_every == 0
             gnorm = global_grad_norm(model) if log_now else None
             opt_timer.start()

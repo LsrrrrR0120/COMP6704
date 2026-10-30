@@ -21,7 +21,19 @@ by sqrt(c_n), so snr_X = c_s^2 ||G||^2 / (c_n s2). The spectral power then follo
 noisy-gradient model of experiments/spectral_noise_theory.py, where the best alpha falls
 roughly linearly in log(SNR):
     alpha = clip(1 - slope * log10(snr_X / snr0), 0, 1).
-Everything stays on the GPU (no host synchronization).
+Everything stays on the GPU (no host synchronization). This estimate turned out to be
+2-5 orders of magnitude too low: the true gradient drifts between steps, and the drift is
+counted as noise (experiments/noise_diagnostic.py).
+
+Half-batch mode (alpha="snr", the revised proposal). The training loop computes the batch
+gradient in two halves and calls `mark_half()` in between (`needs_half_batch` is True).
+With g1, g2 the half-batch gradients at the same parameters and g = (g1 + g2) / 2,
+    N = ||g1 - g2||^2 / 4,   S = ||g||^2 - N
+are unbiased for the noise and signal energy of the batch gradient, with no drift term
+(experiments/snr_estimator_check.py). Per layer, snr_b = EMA(S) / EMA(N) and
+    alpha = clip(-snr_k * (log10 snr_b - snr_c), alpha_min, alpha_max),
+with snr_k = 0.4, snr_c = -1.35, [alpha_min, alpha_max] = [-0.5, 0] fitted by least squares
+to the best one-step alpha of the fixed-point diagnostic (both tasks, five batch sizes).
 """
 import math
 
@@ -52,7 +64,8 @@ def _apply_power(X, evals, V, alpha, sigma_floor):
 
 class SpectralMuon(Muon):
     def __init__(self, params, lr=0.02, alpha=0.5, sigma_floor=1e-3,
-                 snr_beta=0.99, snr0=1.0, slope=0.35, warmup_alpha=0.0, **kwargs):
+                 snr_beta=0.99, snr0=1.0, slope=0.35, warmup_alpha=0.0,
+                 snr_rho=0.95, snr_k=0.4, snr_c=-1.35, alpha_min=-0.5, alpha_max=0.0, **kwargs):
         super().__init__(params, lr=lr, **kwargs)
         for g in self.param_groups:
             g.setdefault("alpha", alpha)
@@ -61,6 +74,28 @@ class SpectralMuon(Muon):
             g.setdefault("snr0", snr0)
             g.setdefault("slope", slope)
             g.setdefault("warmup_alpha", warmup_alpha)
+            g.setdefault("snr_rho", snr_rho)
+            g.setdefault("snr_k", snr_k)
+            g.setdefault("snr_c", snr_c)
+            g.setdefault("alpha_min", alpha_min)
+            g.setdefault("alpha_max", alpha_max)
+
+    @property
+    def needs_half_batch(self):
+        return any(g["use_muon"] and g["alpha"] == "snr" for g in self.param_groups)
+
+    @torch.no_grad()
+    def mark_half(self):
+        """Call after the backward pass of the first half-batch (each half's loss scaled by 1/2)."""
+        for group in self.param_groups:
+            if group["use_muon"] and group["alpha"] == "snr":
+                for p in group["params"]:
+                    if p.grad is not None:
+                        state = self.state[p]
+                        if "half_grad" not in state:
+                            state["half_grad"] = torch.empty_like(p, dtype=torch.float32)
+                        state["half_grad"].copy_(p.grad)
+                        state["half_fresh"] = True
 
     @torch.no_grad()
     def step(self, closure=None):
@@ -101,6 +136,8 @@ class SpectralMuon(Muon):
         alpha = group["alpha"]
         if alpha == "adaptive":
             alpha = self._adaptive_alpha(p, buf, state, group)
+        elif alpha == "snr":
+            alpha = self._half_batch_alpha(p, state, group)
         X = update.reshape(update.size(0), -1).float()
         if X.size(0) < X.size(1):
             X = X.mT
@@ -134,6 +171,26 @@ class SpectralMuon(Muon):
         alpha = (1 - group["slope"] * torch.log10(snr / group["snr0"])).clamp(0.0, 1.0)
         # The momentum EMA needs ~1/(1-beta) steps before the two-moment estimate is valid.
         if state["step"] < 2 / (1 - beta) + 1 / (1 - rho) / 2:
+            alpha = torch.full_like(alpha, group["warmup_alpha"])
+        state["snr"], state["alpha"] = snr, alpha
+        return alpha
+
+    def _half_batch_alpha(self, p, state, group):
+        if not state.pop("half_fresh", False):
+            raise RuntimeError("alpha='snr' needs mark_half() between the two half-batch backward passes")
+        rho = group["snr_rho"]
+        g = p.grad.float()
+        noise = (4 * state["half_grad"] - 2 * g).pow(2).sum() / 4   # ||g1 - g2||^2 / 4
+        signal = g.pow(2).sum() - noise
+        if "ema_S" not in state:
+            state["ema_S"], state["ema_N"] = torch.zeros_like(signal), torch.zeros_like(noise)
+        state["ema_S"].lerp_(signal, 1 - rho)
+        state["ema_N"].lerp_(noise, 1 - rho)
+        bc = 1 - rho ** state["step"]
+        S, N = state["ema_S"] / bc, (state["ema_N"] / bc).clamp_min(1e-30)
+        snr = S.clamp_min(1e-6 * N) / N
+        alpha = (-group["snr_k"] * (torch.log10(snr) - group["snr_c"])).clamp(group["alpha_min"], group["alpha_max"])
+        if state["step"] < 1 / (1 - rho):
             alpha = torch.full_like(alpha, group["warmup_alpha"])
         state["snr"], state["alpha"] = snr, alpha
         return alpha

@@ -19,7 +19,8 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 
-METHODS = {"muon": "Muon (NS-5)", "a0": r"$\alpha=0$ (exact polar)", "a-0.25": r"$\alpha=-0.25$"}
+METHODS = {"muon": "Muon (NS-5)", "a0": r"$\alpha=0$ (exact polar)", "a-0.25": r"$\alpha=-0.25$",
+           "snr": r"half-batch adaptive $\alpha$"}
 
 
 def summarize(root):
